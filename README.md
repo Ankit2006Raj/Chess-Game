@@ -1,6 +1,8 @@
 # ♔ Chess Master - Professional Web Chess Application
 
 A feature-rich, web-based chess game built with Python Flask and modern JavaScript. Play against AI opponents, track your moves, manage time controls, and enjoy a beautiful, responsive interface.
+<img width="1339" height="655" alt="image" src="https://github.com/user-attachments/assets/065c4e0a-a634-438e-9166-bfd447cff419" />
+
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/Flask-2.3.2-green.svg)
