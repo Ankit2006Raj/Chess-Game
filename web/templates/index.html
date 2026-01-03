@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chess — Professional Edition</title>
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      --card: #1e2139;
+      --card-hover: #252a47;
+      --muted: #8b92b0;
+      --accent: #4fc3f7;
+      --accent-hover: #29b6f6;
+      --success: #66bb6a;
+      --warning: #ffa726;
+      --danger: #ef5350;
+      --neon: 0 8px 32px rgba(79, 195, 247, 0.15);
+      --light-square: #f0d9b5;
+      --dark-square: #b58863;
+      --check-highlight: #ff6b6b;
+      --capture-highlight: #ff9999;
+      --valid-move: rgba(102, 187, 106, 0.4);
+      --text: #e8eaf6;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: rgba(30, 33, 57, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app-wrap {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+      border-color: rgba(79, 195, 247, 0.2);
+    }
+
+    .board-card {
+      flex: 1;
+      min-width: 560px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(79, 195, 247, 0.1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+
+    .icon-btn:hover {
+      background: rgba(79, 195, 247, 0.2);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+    }
+
+    .icon-btn:active {
+      transform: translateY(0);
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border: 3px solid rgba(79, 195, 247, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    #board:hover {
+      border-color: rgba(79, 195, 247, 0.4);
+    }
+
+    .cell {
+      position: relative;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .cell:hover {
+      filter: brightness(1.1);
+    }
+
+    .cell.valid-move::after {
+      content: '';
+      position: absolute;
+      width: 30%;
+      height: 30%;
+      border-radius: 50%;
+      background: var(--valid-move);
+      pointer-events: none;
+      border: 2px solid var(--success);
+    }
+
+    .cell.capture-move::after {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 8px;
+      border: 3px solid var(--danger);
+      pointer-events: none;
+      animation: pulse-capture 1s infinite;
+    }
+
+    @keyframes pulse-capture {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.6;
+        transform: scale(0.95);
+      }
+    }
+
+    .cell.in-check {
+      background: radial-gradient(circle, rgba(255, 107, 107, 0.3), transparent) !important;
+      animation: pulse-check 1s infinite;
+    }
+
+    @keyframes pulse-check {
+
+      0%,
+      100% {
+        box-shadow: inset 0 0 30px rgba(255, 107, 107, 0.5);
+      }
+
+      50% {
+        box-shadow: inset 0 0 50px rgba(255, 107, 107, 0.8);
+      }
+    }
+
+    .cell .coord {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.4);
+      text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+    }
+
+    .cell img {
+      width: 75%;
+      height: auto;
+      user-drag: none;
+      user-select: none;
+      cursor: grab;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+      transition: transform 0.2s ease;
+    }
+
+    .cell img:hover {
+      transform: scale(1.1);
+    }
+
+    .cell img:active {
+      cursor: grabbing;
+    }
+
+    .sidebar {
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .stat-box {
+      background: linear-gradient(135deg, rgba(79, 195, 247, 0.1), rgba(41, 182, 246, 0.05));
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .stat-box:hover {
+      background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(41, 182, 246, 0.08));
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .stat-box small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-box strong {
+      display: block;
+      font-size: 20px;
+      margin-top: 8px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    .btn.ghost:hover {
+      background: var(--card-hover);
+      border-color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .score {
+      background: linear-gradient(135deg, rgba(79, 195, 247, 0.15), rgba(41, 182, 246, 0.1));
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid var(--border);
+      box-shadow: var(--neon);
+    }
+
+    .score .label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    #statusValue {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .section {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .section-title {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    input[type=checkbox] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    select:hover {
+      border-color: var(--accent);
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
+    }
+
+    .move-item {
+      padding: 8px 12px;
+      margin: 4px 0;
+      background: rgba(79, 195, 247, 0.05);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .move-item:hover {
+      background: rgba(79, 195, 247, 0.1);
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+
+    .captured-piece {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      margin: 2px;
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .material-advantage {
+      font-weight: 700;
+      color: var(--success);
+      font-size: 14px;
+    }
+
+    .scroll-container {
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scroll-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+
+    .scroll-container::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 10px;
+    }
+
+    .scroll-container::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-hover);
+    }
+
+    @media(max-width:1200px) {
+      .app-wrap {
+        flex-direction: column;
+        width: 100%;
+        align-items: center;
+      }
+
+      .sidebar {
+        width: 100%;
+        max-width: 600px;
+      }
+
+      .board-card {
+        width: 100%;
+        max-width: 600px;
+      }
+    }
+
+    @media(max-width:768px) {
+      .header {
+        padding: 12px 16px;
+      }
+
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+
+      .stat-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+      }
+    }
+
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      font-size: 12px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      margin-bottom: 8px;
+    }
+
+    .tooltip:hover::after {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <h1>♔ Chess Master</h1>
+    <div class="header-actions">
+      <div class="icon-btn tooltip" id="resetIcon" data-tooltip="Reset Game">⟲</div>
+      <div class="icon-btn tooltip" id="flipBoard" data-tooltip="Flip Board">↕</div>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="app-wrap">
+      <div class="card board-card">
+        <div id="board"></div>
+      </div>
+
+      <aside class="sidebar card">
+        <!-- Game Status -->
+        <div class="score">
+          <div class="label">GAME STATUS</div>
+          <div id="statusValue">Ready to Play</div>
+        </div>
+
+        <!-- Player Clocks -->
+        <div class="stat-row">
+          <div class="stat-box">
+            <small>⏱ WHITE</small>
+            <strong id="whiteTime">∞</strong>
+          </div>
+          <div class="stat-box">
+            <small>TURN</small>
+            <strong id="turnText">White</strong>
+          </div>
+          <div class="stat-box">
+            <small>⏱ BLACK</small>
+            <strong id="blackTime">∞</strong>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="controls">
+          <div style="display:flex;gap:12px">
+            <button class="btn" id="newGame">🎮 New Game</button>
+            <button class="btn ghost" id="undo">↶ Undo</button>
+          </div>
+        </div>
+
+        <!-- Time Control -->
+        <div class="section">
+          <div class="section-title">⏰ Time Control</div>
+          <select id="timeControl">
+            <option value="unlimited">♾️ Unlimited</option>
+            <option value="bullet">⚡ Bullet (1+0)</option>
+            <option value="blitz">🔥 Blitz (5+0)</option>
+            <option value="blitz_inc">⚡ Blitz (3+2)</option>
+            <option value="rapid">⏱️ Rapid (10+0)</option>
+            <option value="rapid_inc">⏱️ Rapid (10+5)</option>
+            <option value="classical">♟️ Classical (30+0)</option>
+          </select>
+        </div>
+
+        <!-- AI Opponent -->
+        <div class="section">
+          <div class="section-title">🤖 AI Opponent</div>
+          <button class="btn ghost" id="aiToggle" style="width:100%;margin-bottom:12px">Enable AI</button>
+          <div style="display:flex;gap:12px;margin-bottom:8px">
+            <div style="flex:1">
+              <label class="label" style="display:block;margin-bottom:6px">Color</label>
+              <select id="aiColor">
+                <option value="black">⚫ Black</option>
+                <option value="white">⚪ White</option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label class="label" style="display:block;margin-bottom:6px">Level</label>
+              <select id="aiDifficulty">
+                <option value="easy">😊 Easy</option>
+                <option value="medium" selected>🤔 Medium</option>
+                <option value="hard">😈 Hard</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Captured Pieces -->
+        <div class="section">
+          <div class="section-title">🎯 Captured Pieces</div>
+          <div style="margin-bottom:12px">
+            <div class="label" style="margin-bottom:4px">White captured:</div>
+            <div id="whiteCaptured" style="min-height:32px;padding:4px;background:rgba(0,0,0,0.2);border-radius:6px">
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div class="label" style="margin-bottom:4px">Black captured:</div>
+            <div id="blackCaptured" style="min-height:32px;padding:4px;background:rgba(0,0,0,0.2);border-radius:6px">
+            </div>
+          </div>
+          <div id="materialAdvantage" style="text-align:center;font-size:14px;font-weight:600"></div>
+        </div>
+
+        <!-- Move History -->
+        <div class="section">
+          <div class="section-title">📜 Move History</div>
+          <div class="scroll-container">
+            <div id="moveHistory" style="font-family:monospace;font-size:13px">
+              <div style="color:var(--muted);text-align:center;padding:20px">No moves yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save/Load -->
+        <div style="display:flex;gap:12px">
+          <button class="btn ghost" id="saveGame" style="flex:1">💾 Save</button>
+          <button class="btn ghost" id="loadGame" style="flex:1">📂 Load</button>
+        </div>
+
+        <!-- Display Options -->
+        <div class="section">
+          <div class="section-title">⚙️ Display Options</div>
+          <div class="options">
+            <label class="row" style="cursor:pointer">
+              <input type="checkbox" id="showValidMoves" checked>
+              <span class="label">Show valid moves</span>
+            </label>
+            <label class="row" style="cursor:pointer">
+              <input type="checkbox" id="showCoords" checked>
+              <span class="label">Show coordinates</span>
+            </label>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const boardEl = document.getElementById("board");
+    const turnText = document.getElementById("turnText");
+    const whiteTime = document.getElementById("whiteTime");
+    const blackTime = document.getElementById("blackTime");
+    const statusValue = document.getElementById("statusValue");
+    const moveHistory = document.getElementById("moveHistory");
+    const whiteCaptured = document.getElementById("whiteCaptured");
+    const blackCaptured = document.getElementById("blackCaptured");
+    const materialAdvantage = document.getElementById("materialAdvantage");
+    let boardSize = 640, flipped = false, aiEnabled = false, gameOver = false, pieces = [], selectedPiece = null, validMoves = [], clockInterval = null;
+    function setBoardPixelSize(px) { boardSize = parseInt(px); boardEl.style.width = boardSize + "px"; boardEl.style.height = boardSize + "px"; const s = boardSize / 8; document.querySelectorAll(".cell").forEach(c => { c.style.width = s + "px"; c.style.height = s + "px" }) }
+    function createBoardGrid() { boardEl.innerHTML = ""; for (let r = 0; r < 8; r++) { for (let c = 0; c < 8; c++) { const cell = document.createElement("div"); cell.className = "cell"; cell.dataset.row = r; cell.dataset.col = c; const coord = document.createElement("div"); coord.className = "coord"; coord.textContent = `${"abcdefgh"[c]}${8 - r}`; cell.appendChild(coord); cell.addEventListener("click", onCellClick); cell.addEventListener("dragover", e => e.preventDefault()); cell.addEventListener("drop", onDrop); boardEl.appendChild(cell) } } applySquareColors(); setBoardPixelSize(boardSize) }
+    function renderPieces() { document.querySelectorAll(".cell").forEach(cell => { cell.innerHTML = `<div class="coord">${"abcdefgh"[cell.dataset.col]}${8 - cell.dataset.row}</div>`; cell.classList.remove('in-check', 'valid-move', 'capture-move') }); pieces.forEach(p => { const selector = `.cell[data-row="${p.row}"][data-col="${p.col}"]`; const cell = document.querySelector(selector); if (!cell) return; const img = document.createElement("img"); const nameMap = { p: 'pawn', r: 'rook', n: 'knight', b: 'bishop', q: 'queen', k: 'king' }; const colorMap = { w: 'white', b: 'black' }; const longName = nameMap[p.name] || p.name; const colorLong = colorMap[p.color] || p.color; img.src = `/static-files/images/imgs-80px/${colorLong}_${longName}.png`; img.draggable = !gameOver; img.dataset.row = p.row; img.dataset.col = p.col; img.addEventListener("dragstart", onDragStart); img.addEventListener("click", e => { e.stopPropagation(); onPieceClick(p.row, p.col) }); cell.appendChild(img) }) }
+    function applySquareColors() { document.querySelectorAll(".cell").forEach(cell => { const r = parseInt(cell.dataset.row); const c = parseInt(cell.dataset.col); const isLight = (r + c) % 2 === 0; cell.style.background = isLight ? "var(--light-square)" : "var(--dark-square)" }) }
+    function onPieceClick(row, col) { if (gameOver) return; selectedPiece = { row, col }; fetch('/api/valid_moves', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ row, col }) }).then(r => r.json()).then(json => { if (json.ok) { validMoves = json.moves; highlightValidMoves() } }) }
+    function highlightValidMoves() { document.querySelectorAll(".cell").forEach(cell => cell.classList.remove('valid-move', 'capture-move')); if (!document.getElementById("showValidMoves").checked) return; validMoves.forEach(move => { const cell = document.querySelector(`.cell[data-row="${move.row}"][data-col="${move.col}"]`); if (cell) { cell.classList.add(move.is_capture ? 'capture-move' : 'valid-move') } }) }
+    function onCellClick(e) { if (!selectedPiece || gameOver) return; const cell = e.currentTarget; const row = parseInt(cell.dataset.row); const col = parseInt(cell.dataset.col); const isValidMove = validMoves.some(m => m.row === row && m.col === col); if (isValidMove) { makeMove(selectedPiece.row, selectedPiece.col, row, col) } selectedPiece = null; validMoves = []; renderPieces() }
+    function onDragStart(e) { if (gameOver) { e.preventDefault(); return } const img = e.target; e.dataTransfer.setData("text/plain", JSON.stringify({ row: img.dataset.row, col: img.dataset.col })) }
+    function onDrop(e) { e.preventDefault(); if (gameOver) return; const data = JSON.parse(e.dataTransfer.getData("text/plain")); const dest = e.currentTarget; makeMove(parseInt(data.row), parseInt(data.col), parseInt(dest.dataset.row), parseInt(dest.dataset.col)) }
+    function makeMove(ir, ic, fr, fc) { fetch('/api/move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initial_row: ir, initial_col: ic, final_row: fr, final_col: fc }) }).then(r => r.json()).then(json => { if (!json.ok) { alert('Move failed: ' + (json.error || 'unknown')); return } updateGameState(json) }).catch(err => { console.error(err); alert('Server error') }) }
+
+    function updateGameState(data) { pieces = data.board.pieces; turnText.textContent = data.next_player[0].toUpperCase() + data.next_player.slice(1); if (data.status_message) { statusValue.textContent = data.status_message; if (data.game_status === 'checkmate') { statusValue.style.color = '#ff6b6b'; gameOver = true; stopClock() } else if (data.game_status === 'stalemate') { statusValue.style.color = '#ffd93d'; gameOver = true; stopClock() } else if (data.game_status === 'check') { statusValue.style.color = '#ff6b6b' } else { statusValue.style.color = 'var(--accent)' } } if (data.move_history) { updateMoveHistory(data.move_history) } if (data.captured_pieces) { updateCapturedPieces(data.captured_pieces) } if (data.clock) { updateClock(data.clock) } renderPieces() }
+    function updateMoveHistory(moves) { if (!moves || moves.length === 0) { moveHistory.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">No moves yet</div>'; return } let html = ''; moves.forEach(m => { html += `<div class="move-item"><span style="color:var(--muted)">${m.number}.</span><span style="flex:1;padding:0 8px">${m.white}</span><span style="flex:1">${m.black || ''}</span></div>` }); moveHistory.innerHTML = html; moveHistory.scrollTop = moveHistory.scrollHeight }
+    function updateCapturedPieces(captured) { const pieceIcons = { pawn: '♟', knight: '♞', bishop: '♝', rook: '♜', queen: '♛', king: '♚' }; let whiteHtml = ''; const whiteCap = captured.white_captured || {}; Object.keys(whiteCap).forEach(piece => { const count = whiteCap[piece]; for (let i = 0; i < count; i++) { whiteHtml += `<span style="font-size:24px">${pieceIcons[piece] || piece}</span>` } }); whiteCaptured.innerHTML = whiteHtml || '<span style="color:var(--muted);font-size:12px">None</span>'; let blackHtml = ''; const blackCap = captured.black_captured || {}; Object.keys(blackCap).forEach(piece => { const count = blackCap[piece]; for (let i = 0; i < count; i++) { blackHtml += `<span style="font-size:24px">${pieceIcons[piece] || piece}</span>` } }); blackCaptured.innerHTML = blackHtml || '<span style="color:var(--muted);font-size:12px">None</span>'; const adv = captured.material_advantage || ['equal', 0]; if (adv[0] === 'equal') { materialAdvantage.innerHTML = '<span style="color:var(--muted)">Material: Equal</span>' } else { materialAdvantage.innerHTML = `<span class="material-advantage">${adv[0].toUpperCase()} +${adv[1]}</span>` } }
+    function updateClock(clock) { whiteTime.textContent = clock.white || '∞'; blackTime.textContent = clock.black || '∞'; if (clock.white_seconds !== null && clock.white_seconds < 30) { whiteTime.style.color = '#ff6b6b' } else { whiteTime.style.color = 'var(--text)' } if (clock.black_seconds !== null && clock.black_seconds < 30) { blackTime.style.color = '#ff6b6b' } else { blackTime.style.color = 'var(--text)' } }
+    function startClock() { stopClock(); clockInterval = setInterval(() => { fetch('/api/state').then(r => r.json()).then(data => { if (data.clock) { updateClock(data.clock) } }) }, 1000) }
+    function stopClock() { if (clockInterval) { clearInterval(clockInterval); clockInterval = null } }
+    async function loadState() { try { const res = await fetch('/api/state'); const json = await res.json(); pieces = json.board.pieces; turnText.textContent = json.next_player[0].toUpperCase() + json.next_player.slice(1); aiEnabled = json.ai_enabled || false; if (json.status_message) { statusValue.textContent = json.status_message } if (json.game_status === 'checkmate' || json.game_status === 'stalemate') { gameOver = true } updateMoveHistory(json.move_history); if (json.captured_pieces) { updateCapturedPieces(json.captured_pieces) } if (json.clock) { updateClock(json.clock); if (json.clock.white_seconds !== null) { startClock() } } if (!boardEl.children.length) { createBoardGrid() } renderPieces() } catch (e) { console.error('Failed to load state', e) } }
+    document.getElementById("resetIcon").addEventListener("click", async () => { const tc = document.getElementById("timeControl").value; await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_control: tc }) }); gameOver = false; await loadState() });
+    document.getElementById("flipBoard").addEventListener("click", () => { flipped = !flipped; boardEl.style.transform = flipped ? "rotate(180deg)" : "none" });
+    document.getElementById("newGame").addEventListener("click", async () => { const tc = document.getElementById("timeControl").value; await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_control: tc }) }); gameOver = false; await loadState() });
+    document.getElementById("undo").addEventListener("click", async () => { try { const res = await fetch('/api/undo', { method: 'POST' }); const json = await res.json(); if (!json.ok) { alert('Undo failed: ' + (json.error || 'no history')); return } updateGameState(json) } catch (err) { console.error(err); alert('Server error during undo') } });
+    document.getElementById("aiToggle").addEventListener("click", async () => { aiEnabled = !aiEnabled; const btn = document.getElementById("aiToggle"); btn.textContent = aiEnabled ? 'Disable AI' : 'Enable AI'; const color = document.getElementById("aiColor").value; const difficulty = document.getElementById("aiDifficulty").value; try { const res = await fetch('/api/ai/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: aiEnabled, color, difficulty }) }); const json = await res.json(); if (json.ok) { updateGameState(json) } } catch (err) { console.error(err); alert('Failed to toggle AI') } });
+    document.getElementById("timeControl").addEventListener("change", async (e) => { const tc = e.target.value; try { await fetch('/api/clock/set', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_control: tc }) }); await loadState() } catch (err) { console.error(err) } });
+    document.getElementById("saveGame").addEventListener("click", async () => { const filename = prompt("Enter filename (optional):"); try { const res = await fetch('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename }) }); const json = await res.json(); if (json.ok) { alert(`Game saved as: ${json.filename}`) } else { alert('Save failed: ' + json.error) } } catch (err) { alert('Save error: ' + err) } });
+    document.getElementById("loadGame").addEventListener("click", async () => { try { const res = await fetch('/api/saved_games'); const json = await res.json(); if (!json.ok || !json.games || json.games.length === 0) { alert('No saved games found'); return } let msg = 'Select a game to load:\n\n'; json.games.forEach((g, i) => { msg += `${i + 1}. ${g.filename} (${g.moves} moves, ${g.status})\n` }); const choice = prompt(msg + '\nEnter number:'); if (!choice) return; const idx = parseInt(choice) - 1; if (idx >= 0 && idx < json.games.length) { const game = json.games[idx]; const loadRes = await fetch('/api/load', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: game.filename }) }); const loadJson = await loadRes.json(); if (loadJson.ok) { await loadState(); alert('Game loaded!') } else { alert('Load failed: ' + loadJson.error) } } } catch (err) { alert('Load error: ' + err) } });
+    document.getElementById("showValidMoves").addEventListener("change", () => { if (selectedPiece) { highlightValidMoves() } });
+    document.getElementById("showCoords").addEventListener("change", () => { const display = document.getElementById("showCoords").checked ? "block" : "none"; document.querySelectorAll(".coord").forEach(c => c.style.display = display) });
+    createBoardGrid(); loadState();
+  </script>
+</body>
+
+</html>
