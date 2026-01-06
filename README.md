@@ -156,7 +156,6 @@ chess-master/
 | `/api/load` | POST | Load saved game |
 | `/api/saved_games` | GET | List all saved games |
 | `/api/export_pgn` | POST | Export game as PGN |
-| `/api/clock/set` | POST | Set time control |
 
 ## 🤝 Contributing
 
