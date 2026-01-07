@@ -142,21 +142,6 @@ chess-master/
 - **Session Management** - In-memory game state
 - **File I/O** - Game persistence in JSON format
 
-## 🎯 API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/state` | GET | Get current game state |
-| `/api/reset` | POST | Start a new game |
-| `/api/move` | POST | Make a move |
-| `/api/undo` | POST | Undo last move |
-| `/api/valid_moves` | POST | Get valid moves for a piece |
-| `/api/ai/toggle` | POST | Enable/disable AI |
-| `/api/save` | POST | Save current game |
-| `/api/load` | POST | Load saved game |
-| `/api/saved_games` | GET | List all saved games |
-| `/api/export_pgn` | POST | Export game as PGN |
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
