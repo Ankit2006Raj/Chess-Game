@@ -165,7 +165,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [ ] Opening book integration
 - [ ] Endgame tablebase support
 - [ ] Tournament mode
-- [ ] Database persistence (PostgreSQL/MongoDB)
 
 ## 👨‍💻 Author
 
