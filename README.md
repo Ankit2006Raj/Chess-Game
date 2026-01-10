@@ -39,7 +39,6 @@ A feature-rich, web-based chess game built with Python Flask and modern JavaScri
 - **PGN Export** - Export games in standard PGN format
 - **Undo Moves** - Step back through game history
 - **Captured Pieces Tracking** - Visual display of captured pieces
-- **Material Advantage** - Real-time material count
 
 ### User Interface
 - **Modern, Responsive Design** - Beautiful gradient UI with smooth animations
